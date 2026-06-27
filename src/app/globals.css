@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  background: #0b1220;
+  color: #e2e8f0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.card {
+  @apply rounded-xl border border-slate-700/60 bg-slate-900/60 p-4;
+}
+
+.stat {
+  @apply text-2xl font-bold text-sky-300;
+}
+
+table {
+  @apply w-full text-sm;
+}
+th {
+  @apply px-3 py-2 text-left text-slate-400 font-medium;
+}
+td {
+  @apply px-3 py-2 border-t border-slate-800;
+}
+a {
+  @apply text-sky-400 hover:underline;
+}

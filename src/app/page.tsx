@@ -1,0 +1,83 @@
+import Link from "next/link";
+import { getDashboardStats } from "@/lib/queries";
+import { formatPower, formatDelta } from "@/lib/format";
+
+export const dynamic = "force-dynamic";
+
+export default async function DashboardPage() {
+  let stats;
+  try {
+    stats = await getDashboardStats();
+  } catch {
+    return <EmptyState />;
+  }
+  if (stats.memberCount === 0) return <EmptyState />;
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">İttifak Paneli</h1>
+
+      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Stat label="Üye" value={String(stats.memberCount)} />
+        <Stat label="Toplam Güç" value={formatPower(stats.totalPower)} />
+        <Stat label="🟢 Aktif" value={String(stats.active)} />
+        <Stat label="🔴 AFK" value={String(stats.afk)} />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2">
+        <div className="card">
+          <h2 className="mb-2 font-semibold">📈 En çok gelişen</h2>
+          <ul className="space-y-1 text-sm">
+            {stats.topGainers.map((m) => (
+              <li key={m.id} className="flex justify-between">
+                <Link href={`/members/${m.id}`}>{m.name}</Link>
+                <span className="text-emerald-400">{formatDelta(m.delta7d)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div className="card">
+          <h2 className="mb-2 font-semibold">⚠️ Uzun süredir durgun</h2>
+          {stats.topStalled.length === 0 ? (
+            <p className="text-sm text-slate-400">AFK üye yok 🎉</p>
+          ) : (
+            <ul className="space-y-1 text-sm">
+              {stats.topStalled.map((m) => (
+                <li key={m.id} className="flex justify-between">
+                  <Link href={`/members/${m.id}`}>{m.name}</Link>
+                  <span className="text-red-400">durgun</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <Link href="/members" className="inline-block">
+        → Tüm üyeleri gör
+      </Link>
+    </div>
+  );
+}
+
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="card">
+      <div className="text-sm text-slate-400">{label}</div>
+      <div className="stat">{value}</div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="card text-center">
+      <h1 className="mb-2 text-xl font-bold">Henüz üye yok</h1>
+      <p className="text-slate-400">
+        Başlamak için <Link href="/admin">Yönetim</Link> sayfasından ittifak üyelerinin
+        WOS UID&apos;lerini ekleyin. Veritabanı bağlı değilse önce <code>DATABASE_URL</code>{" "}
+        ayarlayıp <code>npm run db:push</code> çalıştırın.
+      </p>
+    </div>
+  );
+}

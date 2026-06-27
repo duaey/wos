@@ -1,0 +1,100 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Alliance {
+  id        String   @id @default(cuid())
+  name      String
+  tag       String?
+  members   Member[]
+  events    Event[]
+  createdAt DateTime @default(now())
+}
+
+model Member {
+  id         String   @id @default(cuid())
+  wosUid     String   @unique
+  name       String
+  allianceId String?
+  alliance   Alliance? @relation(fields: [allianceId], references: [id])
+
+  snapshots  Snapshot[]
+  eventEntries EventEntry[]
+  chats      ChatMsg[]
+
+  // En son bilinen değerler (hızlı listeleme için)
+  power        BigInt   @default(0)
+  furnaceLevel Int      @default(0)
+  lastChangeAt DateTime @default(now())   // güç/fırın en son ne zaman değişti (aktiflik)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([allianceId])
+}
+
+// WOS resmi API'sinden alınan periyodik anlık görüntü
+model Snapshot {
+  id           String   @id @default(cuid())
+  memberId     String
+  member       Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  power        BigInt
+  furnaceLevel Int
+  recordedAt   DateTime @default(now())
+
+  @@index([memberId, recordedAt])
+}
+
+model Event {
+  id         String       @id @default(cuid())
+  allianceId String?
+  alliance   Alliance?    @relation(fields: [allianceId], references: [id])
+  name       String
+  startsAt   DateTime?
+  entries    EventEntry[]
+  createdAt  DateTime     @default(now())
+}
+
+// Bir etkinlikteki bir üyenin skoru (Vision AI veya manuel)
+model EventEntry {
+  id       String  @id @default(cuid())
+  eventId  String
+  event    Event   @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  memberId String?
+  member   Member? @relation(fields: [memberId], references: [id])
+  rawName  String  // ekrandan okunan ham isim (eşleşmezse)
+  points   BigInt  @default(0)
+  rank     Int?
+  source   String  @default("vision") // vision | manual
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+}
+
+// Tablet + Vision AI'den gelen chat mesajları
+model ChatMsg {
+  id         String   @id @default(cuid())
+  memberId   String?
+  member     Member?  @relation(fields: [memberId], references: [id])
+  rawName    String
+  text       String
+  sentLabel  String?  // ekranda görünen saat etiketi (ham)
+  capturedAt DateTime @default(now())
+  hash       String   @unique // tekrarları engellemek için (rawName+text+sentLabel)
+
+  @@index([capturedAt])
+}
+
+// Tablet'ten gelen ham yükleme kaydı (denetim/yeniden işleme için)
+model Capture {
+  id         String   @id @default(cuid())
+  kind       String   // chat | scores | online | unknown
+  status     String   @default("pending") // pending | parsed | error
+  note       String?
+  createdAt  DateTime @default(now())
+}
