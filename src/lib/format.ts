@@ -16,7 +16,12 @@ export function formatDelta(d: bigint | number): string {
 }
 
 export function furnaceLabel(lv: number): string {
-  // 30 üstü Fire Crystal (FC) seviyeleri
-  if (lv > 30) return "FC" + (lv - 30);
-  return String(lv);
+  // API stove_lv ham değerini gösterir (FC eşlemesi sürüme göre değişir).
+  return "Sv " + lv;
+}
+
+export function furnaceDelta(d: number): string {
+  if (d > 0) return "↑ +" + d;
+  if (d < 0) return "↓ " + d;
+  return "→ 0";
 }

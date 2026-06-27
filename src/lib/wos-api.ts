@@ -3,13 +3,16 @@ import crypto from "crypto";
 /**
  * Whiteout Survival resmi (yarı-açık) player API istemcisi.
  *
- * Endpoint imzalı istek bekler:
- *   sign = md5( "fid=<fid>&time=<time>" + SALT )
- * parametreler alfabetik sırada birleştirilir, sona SALT eklenir.
+ * Doğrulanmış davranış (GitHub Actions üzerinden gerçek FID ile test edildi):
+ *   - İmza: sign = md5("fid=<fid>&time=<time>" + SALT), time = ms
+ *   - İSTEK TARAYICI BAŞLIKLARI GEREKTİRİR (Origin/Referer/User-Agent),
+ *     aksi halde edge 403 "Unauthorized request" döner.
+ *   - Dönen veri: { code, data: { fid, nickname, kid, stove_lv, avatar_image,
+ *     total_recharge_amount }, msg }
  *
- * SALT açık kaynak topluluk botlarından (Reloisback / whiteout-project) gelir.
- * Bu ortamın ağ politikası bu host'u engelliyor olabilir; canlı doğrulama
- * deploy ortamında yapılmalıdır.
+ * ⚠️ API GÜÇ (power) VERMEZ. Sadece fırın seviyesi (stove_lv), isim, sunucu
+ * (kid) ve avatar gelir. Güç/öldürme/skor verisi ancak ekran görüntüsü
+ * (Vision AI) yoluyla elde edilir.
  */
 
 const ENDPOINT = "https://wos-giftcode-api.centurygame.com/api/player";
@@ -19,10 +22,8 @@ export interface WosPlayer {
   fid: string;
   nickname: string;
   furnaceLevel: number; // stove_lv
-  power: bigint;
-  allianceTag: string | null;
-  avatarUrl: string | null;
   kid: number | null; // sunucu (state) no
+  avatarUrl: string | null;
   raw: unknown;
 }
 
@@ -52,7 +53,11 @@ export async function fetchPlayer(fid: string): Promise<WosPlayer | null> {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
-        "User-Agent": "Mozilla/5.0 (wos-alliance-tracker)",
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36",
+        Origin: "https://wos-giftcode.centurygame.com",
+        Referer: "https://wos-giftcode.centurygame.com/",
+        Accept: "application/json, text/plain, */*",
       },
       body,
       cache: "no-store",
@@ -70,22 +75,15 @@ export async function fetchPlayer(fid: string): Promise<WosPlayer | null> {
     return null;
   }
 
-  // API zarfı: { code, data: { fid, nickname, stove_lv, ... }, msg }
   const d = json?.data;
-  if (!d || (json.code !== 0 && json.code !== undefined && d.fid == null)) {
-    return null;
-  }
-
-  const powerRaw = d.power ?? d.total_power ?? d.stove_power ?? 0;
+  if (!d || d.fid == null) return null;
 
   return {
-    fid: String(d.fid ?? fid),
-    nickname: String(d.nickname ?? d.name ?? "?"),
-    furnaceLevel: Number(d.stove_lv ?? d.furnace_lv ?? 0),
-    power: BigInt(Math.trunc(Number(powerRaw)) || 0),
-    allianceTag: d.alliance ?? d.alliance_tag ?? null,
-    avatarUrl: d.avatar_image ?? d.avatar ?? null,
+    fid: String(d.fid),
+    nickname: String(d.nickname ?? "?"),
+    furnaceLevel: Number(d.stove_lv ?? 0),
     kid: d.kid != null ? Number(d.kid) : null,
+    avatarUrl: d.avatar_image ?? null,
     raw: d,
   };
 }

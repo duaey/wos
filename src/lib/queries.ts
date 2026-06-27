@@ -5,16 +5,17 @@ export interface MemberRow {
   id: string;
   name: string;
   wosUid: string;
-  power: bigint;
   furnaceLevel: number;
-  delta7d: bigint; // son 7 gündeki güç değişimi
+  furnaceDelta7d: number; // son 7 gündeki fırın seviyesi değişimi
   status: ActivityStatus;
   lastChangeAt: Date;
 }
 
-/** Üye satırlarını 7 günlük güç değişimi ve aktiflik durumuyla döner. */
+/** Üye satırlarını 7 günlük fırın değişimi ve aktiflik durumuyla döner. */
 export async function getMemberRows(): Promise<MemberRow[]> {
-  const members = await prisma.member.findMany({ orderBy: { power: "desc" } });
+  const members = await prisma.member.findMany({
+    orderBy: [{ furnaceLevel: "desc" }, { name: "asc" }],
+  });
   const weekAgo = new Date(Date.now() - 7 * 86_400_000);
   const now = new Date();
 
@@ -24,14 +25,13 @@ export async function getMemberRows(): Promise<MemberRow[]> {
       where: { memberId: m.id, recordedAt: { lte: weekAgo } },
       orderBy: { recordedAt: "desc" },
     });
-    const base = old?.power ?? m.power;
+    const base = old?.furnaceLevel ?? m.furnaceLevel;
     rows.push({
       id: m.id,
       name: m.name,
       wosUid: m.wosUid,
-      power: m.power,
       furnaceLevel: m.furnaceLevel,
-      delta7d: m.power - base,
+      furnaceDelta7d: m.furnaceLevel - base,
       status: activityStatus({ lastChangeAt: m.lastChangeAt, now }),
       lastChangeAt: m.lastChangeAt,
     });
@@ -41,25 +41,31 @@ export async function getMemberRows(): Promise<MemberRow[]> {
 
 export interface DashboardStats {
   memberCount: number;
-  totalPower: bigint;
+  avgFurnace: number;
   active: number;
   slow: number;
   afk: number;
-  topGainers: MemberRow[];
+  recentlyLeveled: MemberRow[]; // son 7 günde fırın atlayanlar
   topStalled: MemberRow[];
 }
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   const rows = await getMemberRows();
-  const totalPower = rows.reduce((s, r) => s + r.power, BigInt(0));
-  const sortedByGain = [...rows].sort((a, b) => Number(b.delta7d - a.delta7d));
+  const avgFurnace =
+    rows.length === 0
+      ? 0
+      : Math.round(rows.reduce((s, r) => s + r.furnaceLevel, 0) / rows.length);
+
   return {
     memberCount: rows.length,
-    totalPower,
+    avgFurnace,
     active: rows.filter((r) => r.status === "active").length,
     slow: rows.filter((r) => r.status === "slow").length,
     afk: rows.filter((r) => r.status === "afk").length,
-    topGainers: sortedByGain.slice(0, 3),
+    recentlyLeveled: rows
+      .filter((r) => r.furnaceDelta7d > 0)
+      .sort((a, b) => b.furnaceDelta7d - a.furnaceDelta7d)
+      .slice(0, 3),
     topStalled: [...rows]
       .filter((r) => r.status === "afk")
       .sort((a, b) => a.lastChangeAt.getTime() - b.lastChangeAt.getTime())

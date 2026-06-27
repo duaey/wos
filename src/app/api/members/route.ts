@@ -37,15 +37,12 @@ export async function POST(req: NextRequest) {
         create: {
           wosUid: uid,
           name: p?.nickname ?? `UID ${uid}`,
-          power: p?.power ?? BigInt(0),
           furnaceLevel: p?.furnaceLevel ?? 0,
           snapshots: p
-            ? { create: { power: p.power, furnaceLevel: p.furnaceLevel } }
+            ? { create: { power: BigInt(0), furnaceLevel: p.furnaceLevel } }
             : undefined,
         },
-        update: p
-          ? { name: p.nickname, power: p.power, furnaceLevel: p.furnaceLevel }
-          : {},
+        update: p ? { name: p.nickname, furnaceLevel: p.furnaceLevel } : {},
       });
       added.push(uid);
     } catch {

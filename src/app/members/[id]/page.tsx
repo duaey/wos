@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { formatPower, furnaceLabel } from "@/lib/format";
 import { activityStatus, statusLabel, daysSince } from "@/lib/activity";
-import PowerChart from "./PowerChart";
+import FurnaceChart from "./PowerChart";
 
 export const dynamic = "force-dynamic";
 
@@ -22,7 +22,7 @@ export default async function MemberDetail({ params }: { params: { id: string } 
 
   const chart = member.snapshots.map((s) => ({
     date: s.recordedAt.toLocaleDateString("tr-TR", { day: "2-digit", month: "2-digit" }),
-    power: Number(s.power),
+    furnace: s.furnaceLevel,
   }));
 
   const status = activityStatus({ lastChangeAt: member.lastChangeAt });
@@ -36,15 +36,15 @@ export default async function MemberDetail({ params }: { params: { id: string } 
       </div>
 
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Stat label="Güç" value={formatPower(member.power)} />
         <Stat label="Fırın" value={furnaceLabel(member.furnaceLevel)} />
         <Stat label="Durum" value={statusLabel(status)} />
         <Stat label="Son hareket" value={`${daysSince(member.lastChangeAt)} gün önce`} />
+        <Stat label="UID" value={member.wosUid} />
       </div>
 
       <div className="card">
-        <h2 className="mb-3 font-semibold">Güç gelişimi</h2>
-        <PowerChart data={chart} />
+        <h2 className="mb-3 font-semibold">Fırın gelişimi</h2>
+        <FurnaceChart data={chart} />
       </div>
 
       <div className="card">

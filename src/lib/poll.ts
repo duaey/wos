@@ -9,12 +9,14 @@ export interface PollResult {
 }
 
 /**
- * Tüm üyeleri WOS API'sinden günceller. Güç veya fırın değiştiyse
+ * Tüm üyeleri WOS API'sinden günceller. Fırın seviyesi veya isim değiştiyse
  * yeni bir Snapshot kaydeder ve lastChangeAt'i tazeler (aktiflik için).
+ *
+ * Not: API güç vermez; aktiflik fırın seviyesi/isim değişiminden hesaplanır.
  */
 export async function pollAllMembers(): Promise<PollResult> {
   const members = await prisma.member.findMany({
-    select: { id: true, wosUid: true, power: true, furnaceLevel: true },
+    select: { id: true, wosUid: true, name: true, furnaceLevel: true },
   });
 
   const result: PollResult = { checked: members.length, updated: 0, changed: 0, failed: [] };
@@ -30,17 +32,16 @@ export async function pollAllMembers(): Promise<PollResult> {
       continue;
     }
 
-    const changed = p.power !== m.power || p.furnaceLevel !== m.furnaceLevel;
+    const changed = p.furnaceLevel !== m.furnaceLevel || p.nickname !== m.name;
 
     await prisma.member.update({
       where: { id: m.id },
       data: {
         name: p.nickname,
-        power: p.power,
         furnaceLevel: p.furnaceLevel,
         ...(changed ? { lastChangeAt: now } : {}),
         snapshots: {
-          create: { power: p.power, furnaceLevel: p.furnaceLevel, recordedAt: now },
+          create: { power: BigInt(0), furnaceLevel: p.furnaceLevel, recordedAt: now },
         },
       },
     });
