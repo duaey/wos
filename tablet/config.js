@@ -31,4 +31,15 @@ module.exports = {
   // Template görüntüleri /sdcard/wos-templates/ altında olmalı.
   // Bunları kendi tabletinde ekran görüntüsünden kırparak oluştur (README'ye bak).
   templateDir: "/sdcard/wos-templates",
+
+  // ---- Oyun içi AI chat botu (chat-bot.js) ----
+  chatBot: {
+    enabled: true,
+    // Bot bu kelimeyi içeren mesajlara cevap verir (genelde botun oyun adı).
+    // wos .env içindeki BOT_TRIGGER ile aynı mantık.
+    pollMs: 90 * 1000, // chat'e ne sıklıkta bakılsın
+    // Cevaplanan mention hash'lerinin saklandığı dosya (tekrarı önler)
+    answeredFile: "/sdcard/wos-bot-answered.json",
+    // Gerekli template'ler: chat-input.png (mesaj kutusu), send-button.png (gönder)
+  },
 };

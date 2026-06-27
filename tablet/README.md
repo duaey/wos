@@ -48,6 +48,27 @@ kontrol eder; siyah dönüyorsa log'a uyarı yazar. Bu durumda ekran yakalama
 çalışmaz ve **harici kamera yedek planına** geçmek gerekir (eski telefon/webcam
 ile ekranı dışarıdan fotoğraflayıp aynı `/api/ingest`'e yüklemek).
 
+## Oyun içi AI chat botu (chat-bot.js)
+
+Eski ADB tabanlı botun **ADB'siz** sürümü — etiketlenince Claude ile cevaplar.
+ADB ban vektörünü ortadan kaldırır (erişilebilirlik kullanır, ADB değil).
+
+**Nasıl çalışır:** chat'i fotoğraflar → backend `/api/chatbot` Vision ile okur,
+tetikleyici kelimeyi içeren yeni mention'ları bulur, Claude ile (ittifak verisini
+kullanarak) cevap üretir → script cevabı chat kutusuna yazıp gönderir.
+
+**Kurulum:**
+1. `wos` `.env` içinde `BOT_TRIGGER` ayarla (botun cevap vereceği kelime, genelde
+   botun oyun içi adı).
+2. `config.js` → `chatBot.enabled: true`, `pollMs` (cevap sıklığı).
+3. Ek template'ler oluştur: `chat-input.png` (mesaj yazma kutusu), `send-button.png`
+   (gönder butonu) — `chat-icon.png` zaten gerekli.
+4. AutoX.js'te `chat-bot.js`'i çalıştır.
+
+**Gerçekçi beklenti:** Cevaplar anlık değil, döngüde gelir (ör. 90 sn'de bir
+kontrol → soru en geç ~1.5 dk sonra cevaplanır). Tetikleyiciyi içermeyen
+mesajlar atlanır; aynı mention iki kez cevaplanmaz (hash dosyası).
+
 ## Sorun giderme
 
 - **"Template ekranda bulunamadı"** → template görüntüsünü yeniden kırp, eşik düşür.

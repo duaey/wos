@@ -40,6 +40,22 @@ async function call<T>(path: string, imageBase64: string): Promise<T> {
 export function parseChat(imageBase64: string) {
   return call<{ messages: ChatLine[] }>("/parse-chat", imageBase64);
 }
+
+/** Chat asistanı: soruyu (opsiyonel ittifak verisiyle) yanıtlar. */
+export async function answerQuestion(question: string, context?: string): Promise<string> {
+  const res = await fetch(`${BASE}/answer`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(KEY ? { Authorization: `Bearer ${KEY}` } : {}),
+    },
+    body: JSON.stringify({ question, context }),
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error(`vision /answer -> ${res.status}`);
+  const data = (await res.json()) as { reply: string };
+  return data.reply;
+}
 export function parseScores(imageBase64: string) {
   return call<{ event?: string; scores: ScoreLine[] }>("/parse-scores", imageBase64);
 }
