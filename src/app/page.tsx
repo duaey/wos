@@ -1,13 +1,16 @@
 import Link from "next/link";
 import { getDashboardStats } from "@/lib/queries";
+import { getAlerts, type Alert } from "@/lib/alerts";
 import { formatPower, formatDelta } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
   let stats;
+  let alerts: Alert[] = [];
   try {
     stats = await getDashboardStats();
+    alerts = await getAlerts();
   } catch {
     return <EmptyState />;
   }
@@ -23,6 +26,32 @@ export default async function DashboardPage() {
         <Stat label="🟢 Aktif" value={String(stats.active)} />
         <Stat label="🔴 AFK" value={String(stats.afk)} />
       </div>
+
+      {alerts.length > 0 && (
+        <div className="card">
+          <h2 className="mb-2 font-semibold">🔔 Uyarılar</h2>
+          <ul className="space-y-1 text-sm">
+            {alerts.slice(0, 12).map((a, i) => (
+              <li
+                key={i}
+                className={
+                  a.level === "warning"
+                    ? "text-amber-400"
+                    : a.level === "success"
+                    ? "text-emerald-400"
+                    : "text-slate-300"
+                }
+              >
+                {a.memberId ? (
+                  <Link href={`/members/${a.memberId}`}>{a.text}</Link>
+                ) : (
+                  a.text
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       <div className="grid gap-4 md:grid-cols-2">
         <div className="card">
