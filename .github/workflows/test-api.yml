@@ -1,0 +1,25 @@
+name: WOS API Testi
+
+# Elle tetiklenir: Actions sekmesi → "WOS API Testi" → Run workflow → FID gir
+on:
+  workflow_dispatch:
+    inputs:
+      fid:
+        description: "WOS oyuncu ID (FID)"
+        required: true
+        type: string
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Repoyu çek
+        uses: actions/checkout@v4
+
+      - name: Node kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: WOS API'sini test et
+        run: node scripts/test-wos-api.mjs "${{ inputs.fid }}"
