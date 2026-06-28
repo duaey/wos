@@ -25,9 +25,10 @@ echo [3/4] Veritabani semasi uygulaniyor...
 call npx prisma db push
 if errorlevel 1 goto err
 
-echo [4/4] Sunucu baslatiliyor... (http://localhost:3000)
+echo [4/4] Sunucu baslatiliyor... (yerel agda erisilebilir, port 3000)
+echo Tabletten erismek icin: http://[PC-IP]:3000
 echo Kapatmak icin bu pencereyi kapatin.
-call npm run dev
+call npx next dev -H 0.0.0.0 -p 3000
 goto end
 
 :err
